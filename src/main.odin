@@ -2,13 +2,12 @@ package main
 
 import "core:c"
 import "core:fmt"
+import "core:image"
 import glm "core:math/linalg/glsl"
 import "core:time"
 
 import gl "vendor:OpenGL"
 import "vendor:glfw"
-
-import "core:image"
 import stb "vendor:stb/image"
 
 main :: proc() {
@@ -36,51 +35,14 @@ main :: proc() {
 	uniforms := gl.get_uniforms_from_program(program)
 	defer delete(uniforms)
 
-	width, height: i32
-	nrChannels: c.int
+	texture: Texture
+	createTexture(&texture, cstring("assets/fax.jpg"))
 
-	texture: u32
-	gl.GenTextures(1, &texture)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-	gl.TexParameteri(
-		gl.TEXTURE_2D,
-		gl.TEXTURE_MIN_FILTER,
-		gl.LINEAR_MIPMAP_LINEAR,
-	)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-
-	image_data := stb.load(
-		cstring("assets/fax.jpg"),
-		&width,
-		&height,
-		&nrChannels,
-		0,
-	)
-
-	stb.set_flip_vertically_on_load(c.int(1))
-	defer stb.image_free(image_data)
-
-	if image_data != nil {
-		gl.TexImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RGB,
-			width,
-			height,
-			0,
-			gl.RGB,
-			gl.UNSIGNED_BYTE,
-			image_data,
-		)
-		gl.GenerateMipmap(gl.TEXTURE_2D)
-	}
+	oo_texture: Texture
+	createTexture(&oo_texture, cstring("assets/therock_5.png"))
 
 	vao: u32
 	gl.GenVertexArrays(1, &vao);defer gl.DeleteVertexArrays(1, &vao)
-
 	vbo, ebo: u32
 	gl.GenBuffers(1, &vbo);defer gl.DeleteBuffers(1, &vbo)
 	gl.GenBuffers(1, &ebo);defer gl.DeleteBuffers(1, &ebo)
@@ -146,6 +108,11 @@ main :: proc() {
 		raw_data(indices),
 		gl.STATIC_DRAW,
 	)
+
+	gl.UseProgram(program)
+	gl.Uniform1i(gl.GetUniformLocation(program, "ourTexture1"), 0)
+	gl.Uniform1i(gl.GetUniformLocation(program, "ourTexture2"), 1)
+
 	// start_tick := time.tick_now()
 
 	loop: for (!glfw.WindowShouldClose(window)) {
@@ -186,8 +153,13 @@ main :: proc() {
 		gl.ClearColor(0.5, 0.7, 1.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		gl.BindTexture(gl.TEXTURE_2D, texture)
-		gl.UseProgram(program)
+		gl.ActiveTexture((gl.TEXTURE0))
+		gl.BindTexture(gl.TEXTURE_2D, texture.texture)
+		gl.ActiveTexture((gl.TEXTURE1))
+		gl.BindTexture(gl.TEXTURE_2D, oo_texture.texture)
+
+		// gl.BindTexture(gl.TEXTURE_2D, texture)
+		// gl.UseProgram(program)
 
 		// gl.BindVertexArray(vao)
 		// cannot call BindVertexArray() inside loop and will segfault 
