@@ -66,6 +66,19 @@ main :: proc() {
 	}
 
 
+	cube_positions := []glm.vec3 {
+		{0.0, 0.0, 0.0},
+		{2.0, 5.0, -15.0},
+		{-1.5, -2.2, -2.5},
+		{-3.8, -2.0, -12.3},
+		{2.4, -0.4, -3.5},
+		{-1.7, 3.0, -7.5},
+		{1.3, -2.0, -2.5},
+		{1.5, 2.0, -2.5},
+		{1.5, 0.2, -1.5},
+		{-1.3, 1.0, -1.5},
+	}
+
 	cube_vertices := []Cube {
 		{{-0.5, -0.5, -0.5}, {0.0, 0.0}},
 		{{0.5, -0.5, -0.5}, {1.0, 0.0}},
@@ -186,15 +199,6 @@ main :: proc() {
 		gl.ClearColor(0.5, 0.7, 1.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		model := glm.identity(glm.mat4)
-		model = glm.mat4Rotate(glm.vec3{1, 0, 0}, f32(glfw.GetTime()))
-
-		gl.UniformMatrix4fv(
-			gl.GetUniformLocation(program, "model"),
-			1,
-			false,
-			&model[0][0],
-		)
 
 		gl.ActiveTexture((gl.TEXTURE0))
 		gl.BindTexture(gl.TEXTURE_2D, texture.texture)
@@ -204,7 +208,24 @@ main :: proc() {
 		// cannot call BindVertexArray() inside loop and will segfault | still don't know why
 		// gl.BindVertexArray(vao)
 		// gl.DrawElements(gl.TRIANGLES, i32(len(indices)), gl.UNSIGNED_SHORT, nil)
-		gl.DrawArrays(gl.TRIANGLES, 0, 36)
+		for i := 0; i < len(cube_positions); i += 1 {
+
+			model := glm.identity(glm.mat4)
+
+			model = glm.mat4Translate(cube_positions[i])
+
+			angle := 20.0 * i
+			gl.UniformMatrix4fv(
+				gl.GetUniformLocation(program, "model"),
+				1,
+				false,
+				&model[0][0],
+			)
+
+			model = glm.mat4Rotate(glm.vec3{1, 0, 0}, f32(angle))
+
+			gl.DrawArrays(gl.TRIANGLES, 0, 36)
+		}
 
 		glfw.SwapBuffers((window))
 	}
