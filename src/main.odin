@@ -53,11 +53,56 @@ main :: proc() {
 		tex: glm.vec2,
 	}
 
+	Cube :: struct {
+		pos: glm.vec3,
+		col: glm.vec2,
+	}
+
 	vertices := []Vertex {
 		{{+0.5, +0.5, 0}, {0.0, 1.0, 0.0, 0.75}, {1.0, 1.0}},
 		{{+0.5, -0.5, 0}, {0.0, 0.0, 1.0, 0.75}, {1.0, 0.0}},
 		{{-0.5, -0.5, 0}, {1.0, 1.0, 0.0, 0.75}, {0.0, 0.0}},
 		{{-0.5, +0.5, 0}, {1.0, 0.0, 0.0, 0.75}, {0.0, 1.0}},
+	}
+
+
+	cube_vertices := []Cube {
+		{{-0.5, -0.5, -0.5}, {0.0, 0.0}},
+		{{0.5, -0.5, -0.5}, {1.0, 0.0}},
+		{{0.5, 0.5, -0.5}, {1.0, 1.0}},
+		{{0.5, 0.5, -0.5}, {1.0, 1.0}},
+		{{-0.5, 0.5, -0.5}, {0.0, 1.0}},
+		{{-0.5, -0.5, -0.5}, {0.0, 0.0}},
+		{{-0.5, -0.5, 0.5}, {0.0, 0.0}},
+		{{0.5, -0.5, 0.5}, {1.0, 0.0}},
+		{{0.5, 0.5, 0.5}, {1.0, 1.0}},
+		{{0.5, 0.5, 0.5}, {1.0, 1.0}},
+		{{-0.5, 0.5, 0.5}, {0.0, 1.0}},
+		{{-0.5, -0.5, 0.5}, {0.0, 0.0}},
+		{{-0.5, 0.5, 0.5}, {1.0, 0.0}},
+		{{-0.5, 0.5, -0.5}, {1.0, 1.0}},
+		{{-0.5, -0.5, -0.5}, {0.0, 1.0}},
+		{{-0.5, -0.5, -0.5}, {0.0, 1.0}},
+		{{-0.5, -0.5, 0.5}, {0.0, 0.0}},
+		{{-0.5, 0.5, 0.5}, {1.0, 0.0}},
+		{{0.5, 0.5, 0.5}, {1.0, 0.0}},
+		{{0.5, 0.5, -0.5}, {1.0, 1.0}},
+		{{0.5, -0.5, -0.5}, {0.0, 1.0}},
+		{{0.5, -0.5, -0.5}, {0.0, 1.0}},
+		{{0.5, -0.5, 0.5}, {0.0, 0.0}},
+		{{0.5, 0.5, 0.5}, {1.0, 0.0}},
+		{{-0.5, -0.5, -0.5}, {0.0, 1.0}},
+		{{0.5, -0.5, -0.5}, {1.0, 1.0}},
+		{{0.5, -0.5, 0.5}, {1.0, 0.0}},
+		{{0.5, -0.5, 0.5}, {1.0, 0.0}},
+		{{-0.5, -0.5, 0.5}, {0.0, 0.0}},
+		{{-0.5, -0.5, -0.5}, {0.0, 1.0}},
+		{{-0.5, 0.5, -0.5}, {0.0, 1.0}},
+		{{0.5, 0.5, -0.5}, {1.0, 1.0}},
+		{{0.5, 0.5, 0.5}, {1.0, 0.0}},
+		{{0.5, 0.5, 0.5}, {1.0, 0.0}},
+		{{-0.5, 0.5, 0.5}, {0.0, 0.0}},
+		{{-0.5, 0.5, -0.5}, {0.0, 1.0}},
 	}
 
 	indices := []u16{0, 1, 2, 2, 3, 0}
@@ -66,39 +111,32 @@ main :: proc() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(
 		gl.ARRAY_BUFFER,
-		len(vertices) * size_of(vertices[0]),
-		raw_data(vertices),
+		len(cube_vertices) * size_of(cube_vertices[0]),
+		raw_data(cube_vertices),
 		gl.STATIC_DRAW,
 	)
 
 	gl.EnableVertexAttribArray(0)
 	gl.EnableVertexAttribArray(1)
-	gl.EnableVertexAttribArray(2)
+	// gl.EnableVertexAttribArray(2)
 
 	gl.VertexAttribPointer(
 		0,
 		3,
 		gl.FLOAT,
 		false,
-		size_of(Vertex),
-		offset_of(Vertex, pos),
-	)
-	gl.VertexAttribPointer(
-		1,
-		3,
-		gl.FLOAT,
-		false,
-		size_of(Vertex),
-		offset_of(Vertex, col),
+		size_of(Cube),
+		offset_of(Cube, pos),
 	)
 
+
 	gl.VertexAttribPointer(
-		2,
+		1,
 		2,
 		gl.FLOAT,
 		false,
-		size_of(Vertex),
-		offset_of(Vertex, tex),
+		size_of(Cube),
+		offset_of(Cube, col),
 	)
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
@@ -113,7 +151,28 @@ main :: proc() {
 	gl.Uniform1i(gl.GetUniformLocation(program, "ourTexture1"), 0)
 	gl.Uniform1i(gl.GetUniformLocation(program, "ourTexture2"), 1)
 
-	// start_tick := time.tick_now()
+	view := glm.identity(glm.mat4)
+	view = glm.mat4Translate({0.0, 0.0, -3.0})
+
+	proj: glm.mat4
+	proj = glm.mat4Perspective(45., WIDTH / HEIGHT, 0.1, 100.)
+
+	gl.UniformMatrix4fv(
+		gl.GetUniformLocation(program, "view"),
+		1,
+		false,
+		&view[0][0],
+	)
+	gl.UniformMatrix4fv(
+		gl.GetUniformLocation(program, "projection"),
+		1,
+		false,
+		&proj[0][0],
+	)
+
+	start_tick := time.tick_now()
+
+	gl.Enable(gl.DEPTH_TEST)
 
 	loop: for (!glfw.WindowShouldClose(window)) {
 		glfw.PollEvents()
@@ -121,50 +180,31 @@ main :: proc() {
 			glfw.SetWindowShouldClose(window, true)
 		}
 
-		// pos := glm.vec3{glm.cos(t * 2), glm.sin(t * 2), 0}
-		// pos := glm.vec3{1, 1, 1}
-		// pos *= 0.5
-		//
-		// model := glm.mat4{0.9, 0, 0, 0, 0, 0.9, 0, 0, 0, 0, 0.9, 0, 0, 0, 0, 1}
-		//
-		// model[0, 3] = -pos.x
-		// model[1, 3] = -pos.y
-		// model[2, 3] = -pos.z
-		//
-		// model[3].yzx = pos.yzx
-		//
-		// model = model * glm.mat4Rotate({1, 1, 1}, 0)
-		//
-		// view := glm.mat4LookAt({1, -1, +1}, {0, 0, 0}, {1, 0, 1})
-		// proj := glm.mat4Perspective(45, 1.3, 0.1, 100.0)
-		//
-		// // matrix multiplication
-		// u_transform := proj * view * model
-		//
-		// // matrix types in Odin are stored in column-major format but written as you'd normal write them
-		// gl.UniformMatrix4fv(
-		// 	uniforms["u_transform"].location,
-		// 	1,
-		// 	false,
-		// 	&u_transform[0, 0],
-		// )
+		// duration := time.tick_since()
+		// t := time.duration_seconds()
 
-		/*gl.Viewport(0, 0, WIDTH, HEIGHT)*/
 		gl.ClearColor(0.5, 0.7, 1.0, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		model := glm.identity(glm.mat4)
+		model = glm.mat4Rotate(glm.vec3{1, 0, 0}, f32(glfw.GetTime()))
+
+		gl.UniformMatrix4fv(
+			gl.GetUniformLocation(program, "model"),
+			1,
+			false,
+			&model[0][0],
+		)
 
 		gl.ActiveTexture((gl.TEXTURE0))
 		gl.BindTexture(gl.TEXTURE_2D, texture.texture)
 		gl.ActiveTexture((gl.TEXTURE1))
 		gl.BindTexture(gl.TEXTURE_2D, oo_texture.texture)
 
-		// gl.BindTexture(gl.TEXTURE_2D, texture)
-		// gl.UseProgram(program)
-
+		// cannot call BindVertexArray() inside loop and will segfault | still don't know why
 		// gl.BindVertexArray(vao)
-		// cannot call BindVertexArray() inside loop and will segfault 
-		// gl.BindVertexArray(vao)
-		gl.DrawElements(gl.TRIANGLES, i32(len(indices)), gl.UNSIGNED_SHORT, nil)
+		// gl.DrawElements(gl.TRIANGLES, i32(len(indices)), gl.UNSIGNED_SHORT, nil)
+		gl.DrawArrays(gl.TRIANGLES, 0, 36)
 
 		glfw.SwapBuffers((window))
 	}
