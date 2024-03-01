@@ -10,6 +10,14 @@ import gl "vendor:OpenGL"
 import "vendor:glfw"
 import stb "vendor:stb/image"
 
+cameraPos := glm.vec3{0, 0, 3}
+cameraTarget := glm.vec3{0, 0, 0}
+cameraDirection := glm.normalize(cameraPos - cameraTarget)
+
+up := glm.vec3{0, 1, 0}
+cameraRight := glm.normalize(glm.cross(up, cameraDirection))
+cameraUp := glm.cross(cameraDirection, cameraRight)
+
 main :: proc() {
 
 	createWindow()
@@ -65,7 +73,6 @@ main :: proc() {
 		{{-0.5, +0.5, 0}, {1.0, 0.0, 0.0, 0.75}, {0.0, 1.0}},
 	}
 
-
 	cube_positions := []glm.vec3 {
 		{0.0, 0.0, 0.0},
 		{2.0, 5.0, -15.0},
@@ -120,7 +127,7 @@ main :: proc() {
 
 	indices := []u16{0, 1, 2, 2, 3, 0}
 
-	// gl.BindVertexArray(vao)
+	gl.BindVertexArray(vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(
 		gl.ARRAY_BUFFER,
@@ -131,7 +138,6 @@ main :: proc() {
 
 	gl.EnableVertexAttribArray(0)
 	gl.EnableVertexAttribArray(1)
-	// gl.EnableVertexAttribArray(2)
 
 	gl.VertexAttribPointer(
 		0,
@@ -141,7 +147,6 @@ main :: proc() {
 		size_of(Cube),
 		offset_of(Cube, pos),
 	)
-
 
 	gl.VertexAttribPointer(
 		1,
@@ -164,18 +169,8 @@ main :: proc() {
 	gl.Uniform1i(gl.GetUniformLocation(program, "ourTexture1"), 0)
 	gl.Uniform1i(gl.GetUniformLocation(program, "ourTexture2"), 1)
 
-	view := glm.identity(glm.mat4)
-	view = glm.mat4Translate({0.0, 0.0, -3.0})
-
 	proj: glm.mat4
 	proj = glm.mat4Perspective(45., WIDTH / HEIGHT, 0.1, 100.)
-
-	gl.UniformMatrix4fv(
-		gl.GetUniformLocation(program, "view"),
-		1,
-		false,
-		&view[0][0],
-	)
 	gl.UniformMatrix4fv(
 		gl.GetUniformLocation(program, "projection"),
 		1,
@@ -192,13 +187,26 @@ main :: proc() {
 		if (glfw.GetKey(window, glfw.KEY_X) == glfw.PRESS) {
 			glfw.SetWindowShouldClose(window, true)
 		}
-
 		// duration := time.tick_since()
 		// t := time.duration_seconds()
 
 		gl.ClearColor(0.5, 0.7, 1.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+		radius := 10.0
+		camX := glm.sin(glfw.GetTime()) * radius
+		camZ := glm.cos(glfw.GetTime()) * radius
+
+		view := glm.identity(glm.mat4)
+		view = glm.mat4LookAt({f32(camX), 0, f32(camZ)}, {0, 0, 0}, {0, 1, 0})
+		// view = glm.mat4Translate({0.0, 0.0, -6.0})
+
+		gl.UniformMatrix4fv(
+			gl.GetUniformLocation(program, "view"),
+			1,
+			false,
+			&view[0][0],
+		)
 
 		gl.ActiveTexture((gl.TEXTURE0))
 		gl.BindTexture(gl.TEXTURE_2D, texture.texture)
@@ -230,4 +238,7 @@ main :: proc() {
 		glfw.SwapBuffers((window))
 	}
 	cleanWindow()
+}
+
+process_input :: proc(window: ^glfw.WindowHandle) {
 }
