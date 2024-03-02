@@ -1,8 +1,8 @@
 {
 	"$schema": "https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json",
 	"collections": [
-		{ "name": "vendor", "path": "./vendor/" },
-		{ "name": "core", "path": "/home/chaeng/projects/odin/Odin/core/" },
+		{ "name": "vendor", "path": "$ODIN_ROOT/vendor/" },
+		{ "name": "core", "path": "$ODIN_ROOT/core/" },
 		{ "name": "shared", "path": "src" }
 	],
 	"enable_semantic_tokens": false,

@@ -11,12 +11,14 @@ import "vendor:glfw"
 import stb "vendor:stb/image"
 
 cameraPos := glm.vec3{0, 0, 3}
-cameraTarget := glm.vec3{0, 0, 0}
-cameraDirection := glm.normalize(cameraPos - cameraTarget)
+cameraFront := glm.vec3{0, 0, -1}
+cameraUp := glm.vec3{0, 1, 0}
 
-up := glm.vec3{0, 1, 0}
-cameraRight := glm.normalize(glm.cross(up, cameraDirection))
-cameraUp := glm.cross(cameraDirection, cameraRight)
+// cameraTarget := glm.vec3{0, 0, 0}
+// cameraDirection := glm.normalize(cameraPos - cameraTarget)
+//
+deltaTime := 0.0
+lastFrame := 0.0
 
 main :: proc() {
 
@@ -28,6 +30,9 @@ main :: proc() {
 		GL_MINOR_VERSION,
 		glfw.gl_set_proc_address,
 	)
+
+	glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED)
+	glfw.SetCursorPosCallback(window, mouse_callback)
 
 	program, program_ok := gl.load_shaders_file(
 		"res/shaders/tri.vert",
@@ -178,28 +183,34 @@ main :: proc() {
 		&proj[0][0],
 	)
 
-	start_tick := time.tick_now()
+	// start_tick := time.tick_now()
 
 	gl.Enable(gl.DEPTH_TEST)
 
 	loop: for (!glfw.WindowShouldClose(window)) {
+		current_frame := glfw.GetTime()
+		deltaTime = current_frame - lastFrame
+		lastFrame = current_frame
+
 		glfw.PollEvents()
 		if (glfw.GetKey(window, glfw.KEY_X) == glfw.PRESS) {
 			glfw.SetWindowShouldClose(window, true)
 		}
+
+		process_input(window)
 		// duration := time.tick_since()
 		// t := time.duration_seconds()
 
 		gl.ClearColor(0.5, 0.7, 1.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		radius := 10.0
-		camX := glm.sin(glfw.GetTime()) * radius
-		camZ := glm.cos(glfw.GetTime()) * radius
+		// radius := 10.0
+		// camX := glm.sin(glfw.GetTime()) * radius
+		// camZ := glm.cos(glfw.GetTime()) * radius
 
 		view := glm.identity(glm.mat4)
-		view = glm.mat4LookAt({f32(camX), 0, f32(camZ)}, {0, 0, 0}, {0, 1, 0})
-		// view = glm.mat4Translate({0.0, 0.0, -6.0})
+		view = glm.mat4LookAt(cameraPos, cameraPos + cameraFront, cameraUp)
+		// view = glm.mat4LookAt({f32(camX), 0, f32(camZ)}, {0, 0, 0}, {0, 1, 0})
 
 		gl.UniformMatrix4fv(
 			gl.GetUniformLocation(program, "view"),
@@ -240,5 +251,61 @@ main :: proc() {
 	cleanWindow()
 }
 
-process_input :: proc(window: ^glfw.WindowHandle) {
+process_input :: proc(window: glfw.WindowHandle) {
+	cameraSpeed: f32 = .5 * f32(deltaTime)
+
+	if glfw.GetKey(window, glfw.KEY_W) == glfw.PRESS {
+		cameraPos += cameraSpeed * cameraFront
+	}
+	if glfw.GetKey(window, glfw.KEY_S) == glfw.PRESS {
+		cameraPos -= cameraSpeed * cameraFront
+	}
+	if glfw.GetKey(window, glfw.KEY_A) == glfw.PRESS {
+		cameraPos -= glm.normalize(glm.cross(cameraFront, cameraUp) * cameraSpeed)
+	}
+	if glfw.GetKey(window, glfw.KEY_D) == glfw.PRESS {
+		cameraPos += glm.normalize(glm.cross(cameraFront, cameraUp) * cameraSpeed)
+	}
+}
+
+lastX: f32 = WIDTH / 2
+lastY: f32 = HEIGHT / 2
+yaw: f32 = -90
+pitch: f32 = 0
+firstMouse := true
+
+mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos_, ypos_: f64) {
+	xpos := f32(xpos_)
+	ypos := f32(ypos_)
+
+	if firstMouse {
+		lastX = xpos
+		lastY = ypos
+		firstMouse = false
+	}
+
+	xoffset := xpos - lastX
+	yoffset := lastY - ypos
+	lastX = xpos
+	lastY = ypos
+
+	sensitivity: f32 = 0.1
+	xoffset *= sensitivity
+	yoffset *= sensitivity
+
+	yaw += xoffset
+	pitch += yoffset
+	if (pitch > 89.0) {
+		pitch = 89.0
+	}
+	if (pitch < -89.0) {
+		pitch = -89.0
+	}
+
+	front: glm.vec3
+	front.x = glm.cos(glm.radians(yaw)) * glm.cos(glm.radians(pitch))
+	front.y = glm.sin(glm.radians(pitch))
+	front.z = glm.sin(glm.radians(yaw)) * glm.cos(glm.radians(pitch))
+
+	cameraFront = glm.normalize(front)
 }
